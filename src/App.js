@@ -1,25 +1,37 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { Fragment } from "react";
+import "./App.css";
+import { Navigate, Route, Routes } from "react-router-dom";
+import LoginPage from "./pages/login";
+import ProfilePage from "./pages/profile";
 
+import { QueryClient, QueryClientProvider } from "react-query";
+import { RecoilRoot } from "recoil";
+import { NotificationContainer } from "react-notifications";
+
+// Create a client
+const queryClient = new QueryClient();
 function App() {
+  const accessToken = localStorage.getItem("token");
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <RecoilRoot>
+        <Fragment>
+          <Routes>
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route
+              exact
+              path="/profile"
+              element={
+                !!accessToken ? <ProfilePage /> : <Navigate to="/login" />
+              }
+            />
+          </Routes>
+        </Fragment>
+        <NotificationContainer />
+      </RecoilRoot>
+    </QueryClientProvider>
   );
 }
 
