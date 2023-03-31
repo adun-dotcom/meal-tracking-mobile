@@ -25,9 +25,10 @@ export const updateUserMutation = async (code) => {
     `${restApi}/v1/user/read_qrcode?code=${code}`,
     config
   );
+  return response.data;
 };
 
-export const getUserQuery = async (id) => {
-  const { data } = await axios.get(`${restApi}/v1/user/${id}`, config);
-  return data;
-};
+// export const getUserQuery = async (id) => {
+//   const { data } = await axios.get(`${restApi}/v1/user/${id}`, config);
+//   return data;
+// };

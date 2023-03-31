@@ -5,15 +5,12 @@ import BrandLogo from "../../assets/logo.svg";
 import { useNavigate } from "react-router-dom";
 import { QrReader } from "react-qr-reader";
 import ButtonComponent from "../../components/button";
-import { useRecoilState, useRecoilValue } from "recoil";
+import { useRecoilState } from "recoil";
 import { employeeDetailsState } from "../../atoms";
 import BusyOverlay from "../../components/BusyOverlay";
-import {
-  useGetUserQuery,
-  useUpdateUserDataMutation,
-} from "../../operations/mutations";
-import { useQuery } from "react-query";
-import { getUserQuery } from "../../operations/mutations.def";
+import { useUpdateUserDataMutation } from "../../operations/mutations";
+import Moment from "react-moment";
+import "moment-timezone";
 
 const LogoutModal = ({ show, setShow, handleDelete, deleteText }) => {
   return (
@@ -56,62 +53,24 @@ const LogoutModal = ({ show, setShow, handleDelete, deleteText }) => {
 const ProfilePage = () => {
   const [openLogout, setOpenLogout] = useState(false);
   const [openQrReader, setOpenQrReader] = useState(false);
-  const [result, setResult] = useState("");
-  // const userProfile = useRecoilValue(employeeDetailsState);
+  const [codeResult, setCodeResult] = useState("");
   const [userProfile, setEmployeeState] = useRecoilState(employeeDetailsState);
-
   const [pageLoading, setPageLoading] = useState(false);
-  const { mutate, isLoading, isError } = useUpdateUserDataMutation();
-  // const [userQuery] = useGetUserQuery();
-  console.log({ userProfile });
-  const { isLoadingUser, data } = useQuery("get-user", () => {
-    getUserQuery(userProfile?.id);
-  });
-  console.log(data, "userrrr");
+  const { mutate, isError } = useUpdateUserDataMutation();
+
   const handleOpenMenu = () => {
     navigate("/login");
   };
   const navigate = useNavigate();
-
-  const updateUserStatus = () => {
-    if (!!result) {
-      mutate(result);
-    } else {
-      console.log("scanned not true");
-    }
-  };
-
   const qrScannerRef = useRef();
   const stopScanning = () => {
     if (qrScannerRef.current) {
       qrScannerRef.current.stop();
     }
   };
-
-  const loading = isLoading;
-  useEffect(() => {
-    if (!!result) {
-      setOpenQrReader(false);
-      mutate(result);
-      // console.log(data);
-    }
-  }, [result, QrReader]);
-
-  // useLayoutEffect(() => {
-  //   userQuery();
-  // }, []);
-
-  // useEffect(() => {
-  //   // console.log(data);
-  //   if (data) {
-  //     console.log(data, "new data");
-  //     setEmployeeState(data?.data);
-  //   }
-  // }, [data]);
-
   return (
     <>
-      <BusyOverlay loading={loading} />
+      <BusyOverlay loading={pageLoading} />
       <LogoutModal
         show={openLogout}
         setShow={setOpenLogout}
@@ -158,31 +117,33 @@ const ProfilePage = () => {
           </div>
         </div>
         <div className="bg-white shadow-lg px-14 mt-5 py-10 rounded-lg flex flex-col space-y-3 items-center">
-          {openQrReader && (
+          {!!openQrReader && (
             <div className="w-28 h-100  border-4 border-gray-400">
               <QrReader
-                value={result}
                 size={256}
-                scanDelay={500}
-                // onError={(error) => console.info(error)}
-                // onScan={(data) => setResult(data)}
-                onResult={async (result, error) => {
-                  if (!!result) {
-                    setResult(result?.text);
+                // constraints={ faci: 'user' }
+                onResult={(result, error) => {
+                  setPageLoading(true);
+
+                  console.log("result");
+                  if (!codeResult && !!result) {
+                    mutate(result.text);
+                    setOpenQrReader(false);
+                    setPageLoading(false);
+                    setCodeResult(result.text);
                     stopScanning();
                   }
 
                   if (!!error) {
-                    console.info(error);
+                    setPageLoading(false);
                   }
                 }}
-                className={`${!!result && "hidden"}`}
                 style={{ width: "100%" }}
               />
             </div>
           )}
-          {!openQrReader && (
-            <div className="w-full mt-14 flex justify-center">
+          {userProfile?.mealStatus?.toLowerCase() === "active" && (
+            <div className="w-full mt-5 whitespace-nowrap flex justify-center">
               <ButtonComponent
                 btnText="SCAN QR CODE"
                 disabled={false}
@@ -192,14 +153,22 @@ const ProfilePage = () => {
               />
             </div>
           )}
-
+          {userProfile?.mealStatus?.toLowerCase() === "inactive" && (
+            <p>
+              {
+                <Moment format="DD-MMM-YY -  hh:mm A">
+                  {new Date(userProfile?.lastUpdated)}
+                </Moment>
+              }
+            </p>
+          )}
           <p className="text-gray-600 text-center text-sm mb-10 tracking-wider pt-5">
             {userProfile?.mealStatus?.toLowerCase() === "active"
               ? "You haven’t used your meal ticket today"
               : "You've already reached your daily meal allowance. Check back again tomorrow"}
           </p>
 
-          <p>{result}</p>
+          <p>{codeResult}</p>
         </div>
       </div>
     </>
